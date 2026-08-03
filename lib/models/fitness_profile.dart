@@ -6,13 +6,15 @@
 class FitnessProfile {
   final int pushupMax;
   final int squatMax;
-  final int runningMaxMinutes;
+  final int runningValue;
+  final String runningUnit;
   final int fitnessLevel; // 1~4
 
   const FitnessProfile({
     required this.pushupMax,
     required this.squatMax,
-    required this.runningMaxMinutes,
+    required this.runningValue,
+    this.runningUnit = 'minute',
     required this.fitnessLevel,
   });
 
@@ -20,16 +22,25 @@ class FitnessProfile {
     return FitnessProfile(
       pushupMax: json['pushup_max'] as int? ?? 10,
       squatMax: json['squat_max'] as int? ?? 15,
-      runningMaxMinutes: json['running_minutes'] as int? ?? 10,
+      // 하위 호환성 유지: 새로운 키를 우선시하되, 없으면 이전 키 사용
+      runningValue: json['running_value'] as int? ?? json['running_minutes'] as int? ?? 10,
+      runningUnit: json['running_unit'] as String? ?? 'minute',
       fitnessLevel: json['fitness_level'] as int? ?? 1,
     );
   }
 
   /// 규칙 기반 체력 레벨 판정 (결정론적)
-  static int calculateLevel(int pushup, int squat, int running) {
+  static int calculateLevel(int pushup, int squat, int running, {String runningUnit = 'minute'}) {
     int pLevel = pushup < 10 ? 1 : (pushup < 20 ? 2 : (pushup < 35 ? 3 : 4));
     int sLevel = squat < 15 ? 1 : (squat < 25 ? 2 : (squat < 40 ? 3 : 4));
-    int rLevel = running < 10 ? 1 : (running < 20 ? 2 : (running < 30 ? 3 : 4));
+    
+    int rLevel;
+    if (runningUnit == 'km') {
+      rLevel = running < 1 ? 1 : (running < 2 ? 2 : (running < 4 ? 3 : 4));
+    } else {
+      // default: minute
+      rLevel = running < 10 ? 1 : (running < 20 ? 2 : (running < 30 ? 3 : 4));
+    }
 
     List<int> levels = [pLevel, sLevel, rLevel];
     int minLevel = levels.reduce((a, b) => a < b ? a : b);
@@ -47,7 +58,8 @@ class FitnessProfile {
   Map<String, dynamic> toJson() => {
     'pushup_max': pushupMax,
     'squat_max': squatMax,
-    'running_minutes': runningMaxMinutes,
+    'running_value': runningValue,
+    'running_unit': runningUnit,
     'fitness_level': fitnessLevel,
   };
 }

@@ -1,4 +1,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- ======================================================== -->
+    <!-- [권한 추가] 플러그인 및 API 33~36(Android 13~16) 대응 필수 권한 -->
+    <!-- ======================================================== -->
+    
+    <!-- 1. LLM API 통신용 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- 2. pedometer(만보기) 플러그인 (API 29 이상 필수, 누락 시 SecurityException 크래시) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    
+    <!-- 3. Android 13 (API 33) 이상 알림 권한 (thirst 알림 등에 사용) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- 4. home_widget 등 백그라운드 위젯 리프레시를 위한 WAKE_LOCK -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- 5. 부팅 후 위젯/알람 복구용 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 하드웨어 요구사항 (센서가 없어도 설치는 가능하게 required="false") -->
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.light" android:required="false" />
+
     <application
         android:label="pixel_hero"
         android:name="${applicationName}"

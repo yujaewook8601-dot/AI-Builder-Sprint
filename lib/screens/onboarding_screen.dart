@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_state.dart';
-import 'home_screen.dart';
 import 'training_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -18,6 +18,88 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController weightController = TextEditingController();
   String selectedLevel = "초보";
   String selectedGoal = "근력 강화";
+
+  void _submitOnboarding() {
+    final name = nameController.text.trim();
+    final ageText = ageController.text.trim();
+    final heightText = heightController.text.trim();
+    final weightText = weightController.text.trim();
+
+    // 1. 이름 검증 (빈값 및 숫자 포함 여부 체크)
+    if (name.isEmpty) {
+      _showErrorSnackBar("이름을 입력해주세요.");
+      return;
+    }
+    if (RegExp(r'\d').hasMatch(name)) {
+      _showErrorSnackBar("이름에는 숫자를 입력할 수 없습니다.");
+      return;
+    }
+
+    // 2. 나이 검증
+    if (ageText.isEmpty) {
+      _showErrorSnackBar("나이를 입력해주세요.");
+      return;
+    }
+    final age = int.tryParse(ageText);
+    if (age == null || age < 1 || age > 120) {
+      _showErrorSnackBar("나이는 1~120 사이의 올바른 숫자로 입력해주세요.");
+      return;
+    }
+
+    // 3. 키 검증
+    if (heightText.isEmpty) {
+      _showErrorSnackBar("키(cm)를 입력해주세요.");
+      return;
+    }
+    final height = double.tryParse(heightText);
+    if (height == null || height < 50 || height > 250) {
+      _showErrorSnackBar("키는 50~250cm 사이의 올바른 숫자로 입력해주세요.");
+      return;
+    }
+
+    // 4. 몸무게 검증
+    if (weightText.isEmpty) {
+      _showErrorSnackBar("몸무게(kg)를 입력해주세요.");
+      return;
+    }
+    final weight = double.tryParse(weightText);
+    if (weight == null || weight < 20 || weight > 300) {
+      _showErrorSnackBar("몸무게는 20~300kg 사이의 올바른 숫자로 입력해주세요.");
+      return;
+    }
+
+    // 검증 완료 후 전송
+    context.read<GameState>().completeOnboarding(
+      name,
+      age,
+      height,
+      weight,
+      selectedLevel,
+      selectedGoal,
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const TrainingScreen()),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        backgroundColor: const Color(0xFFC0392B),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +122,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const Divider(color: Color(0xFF2D6A38), thickness: 2, endIndent: 20, indent: 20),
               const SizedBox(height: 30),
               
-              _buildLabel("너의 이름은 뭐야?"),
+              _buildLabel("너의 이름은 뭐야? (문자만 입력 가능)"),
               TextField(
                 controller: nameController,
+                keyboardType: TextInputType.name,
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'\d')),
+                ],
                 decoration: _inputDecoration("예: 김용사"),
               ),
               const SizedBox(height: 20),
@@ -57,6 +143,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         TextField(
                           controller: ageController,
                           keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: _inputDecoration("예: 25"),
                         ),
                       ],
@@ -71,6 +160,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         TextField(
                           controller: heightController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                          ],
                           decoration: _inputDecoration("예: 175"),
                         ),
                       ],
@@ -84,6 +176,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               TextField(
                 controller: weightController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
                 decoration: _inputDecoration("예: 70"),
               ),
               const SizedBox(height: 20),
@@ -109,17 +204,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   side: const BorderSide(color: Colors.black, width: 4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
-                onPressed: () {
-                  String name = nameController.text.trim().isEmpty ? "용사" : nameController.text.trim();
-                  int age = int.tryParse(ageController.text) ?? 25;
-                  double height = double.tryParse(heightController.text) ?? 175.0;
-                  double weight = double.tryParse(weightController.text) ?? 70.0;
-                  context.read<GameState>().completeOnboarding(name, age, height, weight, selectedLevel, selectedGoal);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TrainingScreen()),
-                  );
-                },
+                onPressed: _submitOnboarding,
                 child: const Text("건강을 되찾으러 출발!", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               )
             ],

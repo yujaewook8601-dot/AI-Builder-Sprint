@@ -39,8 +39,9 @@ dependencies:
   pedometer: ^4.2.0
   light: ^5.0.0
   shared_preferences: ^2.5.5
-  home_widget: ^0.7.0
+  home_widget: ^0.9.3
   flutter_dotenv: ^5.1.0
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

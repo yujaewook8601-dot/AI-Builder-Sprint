@@ -81,13 +81,13 @@ class _IntroScreenState extends State<IntroScreen> {
             children: [
               // Characters Layout (Slime, Hero, Spirit)
               SizedBox(
-                height: 250,
-                width: MediaQuery.of(context).size.width * 0.9,
+                height: 220,
+                width: MediaQuery.of(context).size.width * 0.95,
                 child: Stack(
                   children: [
                     // Slime / Monster (Top Center)
                     Align(
-                      alignment: Alignment.topCenter,
+                      alignment: const Alignment(0.0, -0.9),
                       child: _buildCutsceneCharacter(
                         imagePath: 'assets/images/Walk3.png',
                         frameCount: 8,
@@ -95,42 +95,36 @@ class _IntroScreenState extends State<IntroScreen> {
                         spriteHeight: 50,
                         opacity: speaker == "몬스터" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
                         scale: speaker == "몬스터" ? 1.05 : 1.0,
-                        baseScale: 3.0,
+                        baseScale: 2.2,
                         loop: true,
                       ),
                     ),
                     // Hero (Bottom Left)
                     Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: _buildCutsceneCharacter(
-                          imagePath: 'assets/images/Dude_Monster_Idle_4.png',
-                          frameCount: 4,
-                          spriteWidth: 32,
-                          spriteHeight: 32,
-                          opacity: speaker == "주인공" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
-                          scale: speaker == "주인공" ? 1.05 : 1.0,
-                          baseScale: 5.5,
-                          loop: true,
-                        ),
+                      alignment: const Alignment(-0.85, 0.85),
+                      child: _buildCutsceneCharacter(
+                        imagePath: 'assets/images/Dude_Monster_Idle_4.png',
+                        frameCount: 4,
+                        spriteWidth: 32,
+                        spriteHeight: 32,
+                        opacity: speaker == "주인공" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
+                        scale: speaker == "주인공" ? 1.05 : 1.0,
+                        baseScale: 3.8,
+                        loop: true,
                       ),
                     ),
                     // Spirit (Bottom Right)
                     Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 20),
-                        child: _buildCutsceneCharacter(
-                          imagePath: 'assets/images/Pink_Monster_Idle_4.png',
-                          frameCount: 4,
-                          spriteWidth: 32,
-                          spriteHeight: 32,
-                          opacity: speaker == "정령" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
-                          scale: speaker == "정령" ? 1.05 : 1.0,
-                          baseScale: 5.5,
-                          loop: true,
-                        ),
+                      alignment: const Alignment(0.85, 0.85),
+                      child: _buildCutsceneCharacter(
+                        imagePath: 'assets/images/Pink_Monster_Idle_4.png',
+                        frameCount: 4,
+                        spriteWidth: 32,
+                        spriteHeight: 32,
+                        opacity: speaker == "정령" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
+                        scale: speaker == "정령" ? 1.05 : 1.0,
+                        baseScale: 3.8,
+                        loop: true,
                       ),
                     ),
                   ],

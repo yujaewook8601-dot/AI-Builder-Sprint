@@ -27,7 +27,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin, RouteAware {
   double _bgX = 0.0;
-  double _monsterRight = -100.0;
+  double _monsterRightRatio = -0.5;
   String _heroState = 'walk';
   String _monsterState = 'walk';
   double _monsterHp = 100.0;
@@ -172,19 +172,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _heroState = 'walk';
     _isEngaged = false;
     _isResetting = true;
-    _monsterRight = MediaQuery.of(context).size.width - 430.0;
+    _monsterRightRatio = 0.03; // 보스는 덩치가 커서 화면 우측 끝(3%)에 배치하여 이격 거리 확보
     
     // Instantly enter cutscene mode before any AI or game loops can update
     _cutsceneType = CutsceneType.bossIntro;
     _cutsceneIndex = 0;
-    _showCutsceneDialog = false;
+    _showCutsceneDialog = true; // 🚀 보스 스테이지 진입 즉시 컷신 대화창 출력
     print("Cutscene Start");
-    
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _cutsceneType == CutsceneType.bossIntro) {
-        setState(() => _showCutsceneDialog = true);
-      }
-    });
   }
 
   void startBossBattle() {
@@ -214,14 +208,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _heroState = 'walk';
       _isEngaged = false;
       _isResetting = true;
-      _monsterRight = -100.0; 
+      _monsterRightRatio = -0.5; // 화면 밖
     });
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
       setState(() {
         _isResetting = false;
-        _monsterRight = MediaQuery.of(context).size.width - 180.0;
+        _monsterRightRatio = 0.2; // 일반 몬스터는 화면 우측에서 20% 위치
       });
       
       Future.delayed(const Duration(seconds: 2), () {
@@ -543,16 +537,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   // HUD Left (Stats)
                   Positioned(
                     top: 10, left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(10, 25, 15, 0.85),
-                        border: Border.all(color: const Color(0xFF2D6A38), width: 2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                           Text(
                             "💪 Lv.${state.getEffectiveStatLevel('str')}${state.outdoorDebuffActive ? ' (😷근손실)' : ''}", 
                             style: TextStyle(color: state.outdoorDebuffActive ? Colors.redAccent : Colors.white, fontSize: 13, fontWeight: FontWeight.bold)
@@ -570,7 +557,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ],
                       ),
                     ),
-                  ),
 
                   // HUD Right (Actions)
                   Positioned(
@@ -596,6 +582,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           onPressed: () => context.read<GameState>().nextDay(),
                           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE1B12C), minimumSize: const Size(80, 30)),
                           child: const Text("📅 다음날", style: TextStyle(color: Colors.black, fontSize: 11)),
+                        ),
+                        const SizedBox(height: 5),
+                        ElevatedButton(
+                          onPressed: () => _showDevToolsDialog(context),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF485460), minimumSize: const Size(80, 30)),
+                          child: const Text("⚙️ 개발자", style: TextStyle(color: Colors.white, fontSize: 11)),
                         ),
                       ],
                     ),
@@ -627,10 +619,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     
-                  // Hero
+                    // Hero
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 500),
-                    bottom: charBottom, left: 60,
+                    bottom: charBottom, 
+                    left: MediaQuery.of(context).size.width * 0.15, // 비율 단위 위치
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 500),
                       opacity: heroOpacity,
@@ -650,7 +643,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     AnimatedPositioned(
                       duration: Duration(seconds: _isEngaged || _isResetting || _cutsceneType != CutsceneType.none ? 0 : 2),
                     bottom: charBottom,
-                    right: _monsterRight,
+                    right: MediaQuery.of(context).size.width * _monsterRightRatio, // 비율 단위 위치
                     child: Column(
                       children: [
                         Text(
@@ -708,9 +701,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
                 // Floating Damages
                   ..._floatingDamages.map((fd) {
+                    double baseRight = MediaQuery.of(context).size.width * _monsterRightRatio;
                     return Positioned(
                       bottom: _currentStage == 3 ? 230 : 120,
-                      right: _currentStage == 3 ? _monsterRight + 120 : _monsterRight + 10,
+                      right: _currentStage == 3 ? baseRight + 120 : baseRight + 10,
                       child: TweenAnimationBuilder(
                         key: ValueKey(fd['key']),
                         tween: Tween<double>(begin: 0, end: 1),
@@ -740,9 +734,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   
                   // Floating Golds
                   ..._floatingGolds.map((fg) {
+                    double baseRight = MediaQuery.of(context).size.width * _monsterRightRatio;
                     return Positioned(
                       bottom: 80,
-                      right: _monsterRight + 20,
+                      right: baseRight + 20,
                       child: TweenAnimationBuilder(
                         key: ValueKey(fg['key']),
                         tween: Tween<double>(begin: 0, end: 1),
@@ -855,18 +850,45 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Container(
         color: Colors.black, 
         alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
+            // Top Right Skip / Exit Button
+            Positioned(
+              top: 30,
+              right: 20,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (_cutsceneType == CutsceneType.bossIntro) {
+                    startBossBattle();
+                  } else {
+                    setState(() {
+                      _cutsceneType = CutsceneType.none;
+                      _showCutsceneDialog = false;
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D6A38),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                icon: const Icon(Icons.close, size: 16),
+                label: const Text("닫기", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             // Characters Layout
             SizedBox(
-              height: 250,
-              width: MediaQuery.of(context).size.width * 0.9,
+              height: 220,
+              width: MediaQuery.of(context).size.width * 0.95,
               child: Stack(
                 children: [
                   // Boss
                   Align(
-                    alignment: Alignment.topCenter,
+                    alignment: const Alignment(0.0, -0.9),
                     child: _buildCutsceneCharacter(
                       imagePath: _cutsceneType == CutsceneType.ending ? 'assets/images/boss_die.png' : 'assets/images/final_boss2.png',
                       frameCount: _cutsceneType == CutsceneType.ending ? 8 : 4,
@@ -874,43 +896,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       spriteHeight: _cutsceneType == CutsceneType.ending ? 32 : 256,
                       opacity: currentSpeaker == "보스" ? 1.0 : 0.4,
                       scale: currentSpeaker == "보스" ? 1.05 : 1.0,
-                      baseScale: _cutsceneType == CutsceneType.ending ? 6.0 : 0.8, 
+                      baseScale: _cutsceneType == CutsceneType.ending ? 4.5 : 0.65, 
                       loop: _cutsceneType != CutsceneType.ending,
                     ),
                   ),
                   // Hero
                   Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: _buildCutsceneCharacter(
-                        imagePath: 'assets/images/Dude_Monster_Idle_4.png',
-                        frameCount: 4,
-                        spriteWidth: 32,
-                        spriteHeight: 32,
-                        opacity: currentSpeaker == "주인공" ? 1.0 : 0.4,
-                        scale: currentSpeaker == "주인공" ? 1.05 : 1.0,
-                        baseScale: 5.5, 
-                        loop: true,
-                      ),
+                    alignment: const Alignment(-0.85, 0.85),
+                    child: _buildCutsceneCharacter(
+                      imagePath: 'assets/images/Dude_Monster_Idle_4.png',
+                      frameCount: 4,
+                      spriteWidth: 32,
+                      spriteHeight: 32,
+                      opacity: currentSpeaker == "주인공" ? 1.0 : 0.4,
+                      scale: currentSpeaker == "주인공" ? 1.05 : 1.0,
+                      baseScale: 3.8, 
+                      loop: true,
                     ),
                   ),
                   // Spirit
                   Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 20),
-                      child: _buildCutsceneCharacter(
-                        imagePath: _isSpiritFading ? 'assets/images/Pink_Monster_Death_8.png' : 'assets/images/Pink_Monster_Idle_4.png',
-                        frameCount: _isSpiritFading ? 8 : 4,
-                        spriteWidth: 32,
-                        spriteHeight: 32,
-                        opacity: _isSpiritFading ? 0.0 : (currentSpeaker == "정령" ? 1.0 : 0.4),
-                        scale: currentSpeaker == "정령" ? 1.05 : 1.0,
-                        baseScale: 5.5, 
-                        loop: !_isSpiritFading,
-                        isFading: _isSpiritFading,
-                      ),
+                    alignment: const Alignment(0.85, 0.85),
+                    child: _buildCutsceneCharacter(
+                      imagePath: _isSpiritFading ? 'assets/images/Pink_Monster_Death_8.png' : 'assets/images/Pink_Monster_Idle_4.png',
+                      frameCount: _isSpiritFading ? 8 : 4,
+                      spriteWidth: 32,
+                      spriteHeight: 32,
+                      opacity: _isSpiritFading ? 0.0 : (currentSpeaker == "정령" ? 1.0 : 0.4),
+                      scale: currentSpeaker == "정령" ? 1.05 : 1.0,
+                      baseScale: 3.8, 
+                      loop: !_isSpiritFading,
+                      isFading: _isSpiritFading,
                     ),
                   ),
                 ],
@@ -983,8 +999,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
           ],
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
   }
 
   Widget _buildCutsceneCharacter({
@@ -1071,6 +1089,158 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         ),
       ),
+    );
+  }
+
+  void _showDevToolsDialog(BuildContext context) {
+    final state = context.read<GameState>();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1F1F1F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF2D6A38), width: 2),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.developer_mode, color: Color(0xFFFBC531)),
+              SizedBox(width: 8),
+              Text("⚙️ 개발자 메뉴", style: TextStyle(color: Color(0xFFFBC531), fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text("🚩 스테이지 이동", style: TextStyle(color: Color(0xFFA8E6CF), fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D6A38)),
+                      onPressed: () {
+                        state.resetToStage(1);
+                        setState(() {
+                          _currentStage = 1;
+                          _spawnMonster();
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text("1스테이지 (300km)", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D6A38)),
+                      onPressed: () {
+                        state.resetToStage(2);
+                        setState(() {
+                          _currentStage = 2;
+                          _spawnMonster();
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text("2스테이지 (200km)", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D6A38)),
+                      onPressed: () {
+                        state.resetToStage(3);
+                        setState(() {
+                          _currentStage = 3;
+                          _spawnMonster();
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text("3스테이지 (100km)", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text("⚡ 치트 및 조작", style: TextStyle(color: Color(0xFFA8E6CF), fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B4F72)),
+                  onPressed: () {
+                    state.devAddGold(1000);
+                    Navigator.pop(context);
+                  },
+                  child: const Text("💰 +1,000 골드 추가", style: TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+                const SizedBox(height: 6),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B4F72)),
+                  onPressed: () {
+                    state.devCompleteAllQuests();
+                    Navigator.pop(context);
+                  },
+                  child: const Text("✅ 모든 퀘스트 완료 처리", style: TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+                const SizedBox(height: 16),
+                const Text("📈 스탯 증가 (경험치 무시)", style: TextStyle(color: Color(0xFFA8E6CF), fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C3483)),
+                      onPressed: () {
+                        state.devLevelUpStat('str');
+                        Navigator.pop(context);
+                      },
+                      child: const Text("💪 근력 +1", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C3483)),
+                      onPressed: () {
+                        state.devLevelUpStat('agi');
+                        Navigator.pop(context);
+                      },
+                      child: const Text("⚡ 민첩 +1", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C3483)),
+                      onPressed: () {
+                        state.devLevelUpStat('end');
+                        Navigator.pop(context);
+                      },
+                      child: const Text("🛡️ 지구력 +1", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text("🔄 시스템 초기화", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC0392B)),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await state.devResetAllToOpening();
+                    if (mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const IntroScreen()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  child: const Text("💣 오프닝부터 전체 초기화", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("닫기", style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -26,6 +26,7 @@ enum AssessmentStep {
   waitPushup,
   waitSquat,
   waitRunning,
+  waitCondition,
 }
 
 class UserStat {
@@ -133,8 +134,13 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
 
   void _safeNotifyListeners() {
     if (!_isDisposed) {
-      notifyListeners();
-      WidgetService.updateQuestWidget(dailyQuests);
+      // 빌드 중 notifyListeners 호출 시 발생하는 크래시(App stopped) 방지
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_isDisposed) {
+          notifyListeners();
+          WidgetService.updateQuestWidget(dailyQuests);
+        }
+      });
     }
   }
 
@@ -373,7 +379,8 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
         _safeNotifyListeners();
       }
     } else {
-      if (chatHistory.isEmpty || (chatHistory.isNotEmpty && chatHistory.last.isUser)) {
+      if (lastQuestGeneratedDate != day && (chatHistory.isEmpty || (chatHistory.isNotEmpty && chatHistory.last.isUser))) {
+        assessmentStep = AssessmentStep.waitCondition; // 컨디션 대기 상태 명시적 진입
         String greeting;
         if (day > 1 && yesterdayCompletionRate < 1.0) {
           greeting = "이런, $userName 님! 어제는 퀘스트를 다 끝내지 못하셨군요 😢\n오늘은 어제 몫까지 더 열심히 해볼까요? 오늘 컨디션은 좀 어떠신가요? (예: 허벅지가 아파요, 피곤해요 등)";
@@ -643,10 +650,10 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
     try {
       if (!isAssessmentComplete) {
         await _handleFitnessAssessment(message, currentRequestId);
-      } else if (lastQuestGeneratedDate == day) {
-        await _handleCompanionChat(message, currentRequestId);
-      } else {
+      } else if (assessmentStep == AssessmentStep.waitCondition || lastQuestGeneratedDate != day) {
         await _handleConditionAnalysis(message);
+      } else {
+        await _handleCompanionChat(message, currentRequestId);
       }
     } catch (e) {
       if (_isDisposed || currentRequestId != _chatRequestId) return; 
@@ -669,20 +676,21 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
   // 채팅 및 퀘스트 발급 플로우 (LLM 판단 -> Flutter 계산)
   // ----------------------------------------------------
   Future<void> _handleFitnessAssessment(String message, int requestId) async {
-    if (!FeedbackAnalyzerService.isFitnessRelated(message, isAssessment: true)) {
+    if (!FeedbackAnalyzerService.validateAssessmentInput(message)) {
       String replyText = "지금은 체력 측정 중입니다.";
       if (assessmentStep == AssessmentStep.waitPushup) {
-        replyText = "지금은 푸시업 최대 횟수만 알려주세요.";
+        replyText = "지금은 푸시업 최대 횟수를 숫자로 알려주세요. (예: 15번)";
       } else if (assessmentStep == AssessmentStep.waitSquat) {
-        replyText = "지금은 스쿼트 최대 횟수만 알려주세요.";
+        replyText = "지금은 스쿼트 최대 횟수를 숫자로 알려주세요. (예: 30개)";
       } else if (assessmentStep == AssessmentStep.waitRunning) {
-        replyText = "지금은 달리기 가능한 시간을 알려주세요.";
+        replyText = "지금은 달리기 가능한 시간을 숫자로 알려주세요. (예: 30분)";
       }
       _addChatMessage(ChatMessage(speaker: "정령", text: replyText, isUser: false));
       return; // 상태 변경 없이 현재 WAIT 상태 유지
     }
 
     int? extractedValue;
+    String? extractedUnit;
 
     try {
       final prompt = LlmFitnessConfig.fitnessAssessmentPrompt;
@@ -699,6 +707,9 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
           final data = jsonDecode(jsonStr);
           if (data['value'] != null && data['value'] is int) {
             extractedValue = data['value'] as int;
+          }
+          if (data['unit'] != null && data['unit'] is String) {
+            extractedUnit = data['unit'] as String;
           }
         }
       }
@@ -733,30 +744,39 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
       }
       squatValue = extractedValue;
       assessmentStep = AssessmentStep.waitRunning;
-      _addChatMessage(ChatMessage(speaker: "정령", text: "스쿼트 ${extractedValue}번! 좋습니다. 마지막으로 달리기는 쉬지 않고 몇 분 정도 가능하신가요?", isUser: false));
+      _addChatMessage(ChatMessage(speaker: "정령", text: "스쿼트 ${extractedValue}번! 좋습니다. 마지막으로 달리기는 쉬지 않고 어느 정도 가능하신가요? (예: 30분, 3km)", isUser: false));
       
     } else if (assessmentStep == AssessmentStep.waitRunning) {
-      if (extractedValue < 1 || extractedValue > 60) {
-        _addChatMessage(ChatMessage(speaker: "정령", text: "달리기 시간이 범위를 벗어난 것 같아요 (1~60분). 다시 한 번 말씀해 주시겠어요?", isUser: false));
+      if (extractedValue < 1 || extractedValue > (extractedUnit == "km" ? 100 : 60)) {
+        _addChatMessage(ChatMessage(speaker: "정령", text: "달리기 시간이나 거리가 범위를 벗어난 것 같아요. 다시 한 번 말씀해 주시겠어요?", isUser: false));
         return;
       }
       runningValue = extractedValue;
       
       if (pushupValue != null && squatValue != null && runningValue != null) {
-        int calculatedLevel = FitnessProfile.calculateLevel(pushupValue!, squatValue!, runningValue!);
+        String storedUnit = (extractedUnit == 'km') ? 'km' : 'minute';
+        
+        int calculatedLevel = FitnessProfile.calculateLevel(
+          pushupValue!, 
+          squatValue!, 
+          runningValue!,
+          runningUnit: storedUnit,
+        );
 
         fitnessProfile = FitnessProfile(
           pushupMax: pushupValue!,
           squatMax: squatValue!,
-          runningMaxMinutes: runningValue!,
+          runningValue: runningValue!,
+          runningUnit: storedUnit,
           fitnessLevel: calculatedLevel,
         );
         
-        assessmentStep = AssessmentStep.idle; // 🚀 완료 직후 IDLE로 복귀하여 깔끔한 상태 유지
+        assessmentStep = AssessmentStep.waitCondition; // 🚀 완료 직후 Condition 단계로 명시적 전환
         
+        String koreanUnit = (extractedUnit == 'km') ? 'km' : '분';
         _addChatMessage(ChatMessage(
           speaker: "정령",
-          text: "달리기 ${extractedValue}분까지 모두 확인했어요! 현재 체력을 바탕으로 오늘의 퀘스트를 준비해 볼게요. 이제 오늘 컨디션은 어떠신지 편하게 말씀해 주세요.",
+          text: "달리기 ${extractedValue}${koreanUnit}까지 모두 확인했어요! 현재 체력을 바탕으로 오늘의 퀘스트를 준비해 볼게요. 이제 오늘 컨디션은 어떠신지 편하게 말씀해 주세요.",
           isUser: false,
         ));
       } else {
@@ -767,10 +787,10 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _handleConditionAnalysis(String message) async {
-    if (!FeedbackAnalyzerService.isFitnessRelated(message, isAssessment: false)) {
+    if (!FeedbackAnalyzerService.validateConditionInput(message)) {
       _addChatMessage(ChatMessage(
         speaker: "정령",
-        text: "오늘 운동과 관련된 이야기나 현재 상태를 알려주세요.",
+        text: "현재 상태를 단어나 문장으로 자유롭게 알려주세요. (예: 피곤해, 나빠, 좋아)",
         isUser: false,
       ));
       return;
@@ -848,6 +868,7 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
 
     dailyQuests = calculatedQuests;
     lastQuestGeneratedDate = day;
+    assessmentStep = AssessmentStep.idle; // 컨디션 및 퀘스트 생성 완료 후 자유 대화(idle) 단계로 전환
 
     chatHistory.add(ChatMessage(
       speaker: "정령",
@@ -915,7 +936,7 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
     saveState();
   }
 
-  void devResetAllToOpening() async {
+  Future<void> devResetAllToOpening() async {
     isIntroDone = false;
     isTutorialDone = false;
     isOnboardingDone = false;

@@ -80,12 +80,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "정령의 방 (${state.isAssessmentComplete ? 'Lv.${state.fitnessLevel} ${state.fitnessLevelName}' : '체력 진단 진행 중'})",
-          style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF1A3622),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFFA8E6CF)),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          title: Text(
+            "정령의 방 (${state.isAssessmentComplete ? 'Lv.${state.fitnessLevel} ${state.fitnessLevelName}' : '체력 진단 진행 중'})",
+            style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFF1A3622),
         actions: [
           TextButton(
             onPressed: () {
@@ -311,7 +315,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           )
         ],
       ), // Closes Column
-      ), // Closes Scaffold
-    ); // Closes return PopScope
-  }
+    ), // Closes Scaffold
+  ); // Closes PopScope
+}
 }

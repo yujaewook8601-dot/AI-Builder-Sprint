@@ -127,7 +127,8 @@ class QuestCalculator {
       id: 'running',
       baseTitle: '달리기',
       stat: 'agi',
-      maxCap: profile.runningMaxMinutes,
+      maxCap: profile.runningValue,
+      runningUnit: profile.runningUnit,
       globalMult: globalMultiplier,
       severity: lowerSeverity,
       recoveryTitle: '가벼운 걷기',
@@ -143,6 +144,7 @@ class QuestCalculator {
     required String baseTitle,
     required String stat,
     required int maxCap,
+    String? runningUnit,
     required double globalMult,
     required SorenessSeverity severity,
     required String recoveryTitle,
@@ -167,10 +169,18 @@ class QuestCalculator {
     
     int minLimit = _minLimits[id] ?? 5;
     int maxLimit = _maxLimits[id] ?? 50;
+    
+    if (id == 'running' && runningUnit == 'km') {
+      minLimit = 1;
+      maxLimit = 10;
+    }
 
     int finalTarget = calculated.clamp(minLimit, maxLimit);
     int sets = _setsTable[id] ?? 1;
-    String unit = (id == 'running') ? '분' : '회';
+    String unit = '회';
+    if (id == 'running') {
+      unit = runningUnit == 'km' ? 'km' : '분';
+    }
 
     return Quest(
       id: id,

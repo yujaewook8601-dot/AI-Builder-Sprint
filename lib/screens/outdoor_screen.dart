@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:pedometer/pedometer.dart';
 import 'package:light/light.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../providers/game_state.dart';
 
 class OutdoorScreen extends StatefulWidget {
@@ -27,17 +28,33 @@ class _OutdoorScreenState extends State<OutdoorScreen> {
   @override
   void initState() {
     super.initState();
-    initSensors();
+    _checkPermissionsAndInitSensors();
   }
 
-  void initSensors() {
+  Future<void> _checkPermissionsAndInitSensors() async {
+    try {
+      var status = await Permission.activityRecognition.request();
+      if (status.isGranted) {
+        _initPedometer();
+      } else {
+        debugPrint("Activity Recognition permission denied");
+      }
+    } catch (e) {
+      debugPrint("Permission check error: $e");
+    }
+    _initLightSensor();
+  }
+
+  void _initPedometer() {
     try {
       _stepCountStream = Pedometer.stepCountStream;
-      _stepCountStream.listen(onStepCount).onError(onStepCountError);
+      _stepCountStream.listen(onStepCount, onError: onStepCountError);
     } catch (e) {
       debugPrint("Pedometer Error: $e");
     }
+  }
 
+  void _initLightSensor() {
     try {
       _light = Light();
       _lightSubscription = _light.lightSensorStream.listen(onData);

@@ -48,13 +48,12 @@ OUTPUT
 
 Return ONLY valid JSON.
 
-Exactly one of these:
+Exactly one of these formats:
 
-{"value": 20}
-
-or
-
-{"value": null}
+{"value": 20, "unit": "count"}
+{"value": 4, "unit": "km"}
+{"value": 30, "unit": "minute"}
+{"value": null, "unit": null}
 
 Do not output anything else.
 
@@ -86,22 +85,30 @@ Never explain your reasoning or chain of thought.
 RULES
 ----------------------------------------
 
-Extract exactly ONE integer.
+Extract exactly ONE integer, and determine its unit.
 
 If the user expresses the value in Korean words,
 convert it into an Arabic integer.
 
+For units:
+- Pushups/Squats/Generic counts -> "count"
+- Distance (km, 키로, 킬로, 킬로미터) -> "km"
+- Time (분, 시간) -> "minute" (if hour, convert to minutes. e.g. "1시간" -> 60, "minute")
+- DO NOT convert distance to time, or time to distance.
+
 Examples
 
-"한 개" → 1
-"두 번" → 2
-"세 번" → 3
-"열다섯 개" → 15
-"스무 개" → 20
-"스물다섯 개" → 25
-"서른 개" → 30
-"마흔다섯 개" → 45
-"쉰 개" → 50
+"한 개" -> {"value": 1, "unit": "count"}
+"두 번" -> {"value": 2, "unit": "count"}
+"세 번" -> {"value": 3, "unit": "count"}
+"열다섯 개" -> {"value": 15, "unit": "count"}
+"스무 개" -> {"value": 20, "unit": "count"}
+"4km" -> {"value": 4, "unit": "km"}
+"4키로" -> {"value": 4, "unit": "km"}
+"4킬로미터" -> {"value": 4, "unit": "km"}
+"30분" -> {"value": 30, "unit": "minute"}
+"1시간" -> {"value": 60, "unit": "minute"}
+"1시간 30분" -> {"value": 90, "unit": "minute"}
 
 ----------------------------------------
 SELF-CORRECTION RULE
@@ -112,9 +119,9 @@ extract the LAST clearly stated number.
 
 Examples
 
-"20개... 아니 25개요" → {"value": 25}
-"15분... 아, 20분 정도" → {"value": 20}
-"30개 했어요, 아니다 35개" → {"value": 35}
+"20개... 아니 25개요" -> {"value": 25, "unit": "count"}
+"15분... 아, 20분 정도" -> {"value": 20, "unit": "minute"}
+"30개 했어요, 아니다 35개" -> {"value": 35, "unit": "count"}
 
 A self-correction is recognized when the user uses expressions such as:
 아니 / 아니다 / 아니요 / 아, / 정정하면 / 맞다 /
@@ -123,9 +130,9 @@ or restates the number in a correcting tone.
 A self-correction requires a clear intent to replace the previous number.
 Expressions that present alternatives or ranges are NOT self-corrections.
 
-"20 아니면 30" → {"value": null}  (alternative, not a correction)
-"20 또는 30"   → {"value": null}  (alternative, not a correction)
-"20~30개"      → {"value": null}  (range, not a correction)
+"20 아니면 30" -> {"value": null, "unit": null}  (alternative, not a correction)
+"20 또는 30"   -> {"value": null, "unit": null}  (alternative, not a correction)
+"20~30개"      -> {"value": null, "unit": null}  (range, not a correction)
 
 ----------------------------------------
 RETURN NULL WHEN
@@ -133,7 +140,7 @@ RETURN NULL WHEN
 
 Return
 
-{"value": null}
+{"value": null, "unit": null}
 
 if
 
@@ -155,7 +162,7 @@ Examples
 "20 아니면 30"
 "3.5개"
 ↓
-{"value": null}
+{"value": null, "unit": null}
 
 ----------------------------------------
 VALID VALUES
