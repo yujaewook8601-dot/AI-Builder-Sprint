@@ -18,6 +18,7 @@ class ShopItem {
   final int? spriteWidth;
   final int? spriteHeight;
   final bool isVertical;
+  final int? columns; // 신규: 2D 그리드 지원
 
   ShopItem({
     required this.id,
@@ -33,6 +34,7 @@ class ShopItem {
     this.spriteWidth,
     this.spriteHeight,
     this.isVertical = false,
+    this.columns,
   });
 }
 
@@ -43,7 +45,7 @@ class ShopScreen extends StatelessWidget {
     ShopItem(
       id: 'str_buff_potion',
       name: '랜덤 근력 강화 포션',
-      desc: '근력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
+      desc: '근력 능력치 버프를 랜덤하게 부여합니다. (근력 +2~10 증가)',
       price: 50,
       type: 'buff_potion',
       stat: 'str',
@@ -53,12 +55,12 @@ class ShopScreen extends StatelessWidget {
       frameCount: 3,
       spriteWidth: 16,
       spriteHeight: 16,
-      isVertical: true,
+      columns: 3,
     ),
     ShopItem(
       id: 'agi_buff_potion',
       name: '랜덤 민첩 강화 포션',
-      desc: '민첩 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
+      desc: '민첩 능력치 버프를 랜덤하게 부여합니다. (민첩 +2~10 증가)',
       price: 50,
       type: 'buff_potion',
       stat: 'agi',
@@ -68,12 +70,12 @@ class ShopScreen extends StatelessWidget {
       frameCount: 3,
       spriteWidth: 16,
       spriteHeight: 16,
-      isVertical: true,
+      columns: 3,
     ),
     ShopItem(
       id: 'end_buff_potion',
       name: '랜덤 지구력 강화 포션',
-      desc: '지구력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
+      desc: '지구력 능력치 버프를 랜덤하게 부여합니다. (지구력 +2~10 증가)',
       price: 50,
       type: 'buff_potion',
       stat: 'end',
@@ -83,7 +85,7 @@ class ShopScreen extends StatelessWidget {
       frameCount: 3,
       spriteWidth: 16,
       spriteHeight: 16,
-      isVertical: true,
+      columns: 3,
     ),
     ShopItem(
       id: 'portable_sunlight',
@@ -134,11 +136,10 @@ class ShopScreen extends StatelessWidget {
         final midnight = DateTime(now.year, now.month, now.day, 23, 59, 59);
         final secondsUntilMidnight = midnight.difference(now).inSeconds;
         
-        state.gainStatExp(item.stat!, buffVal);
         state.applyBuff(item.id, item.stat!, buffVal, secondsUntilMidnight);
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${item.name} 사용! ${item.stat!.toUpperCase()} +$buffVal Exp 및 당일 자정까지 버프 유지"), backgroundColor: Colors.green),
+          SnackBar(content: Text("${item.name} 사용! 당일 자정까지 ${item.stat!.toUpperCase()} +$buffVal 버프 유지"), backgroundColor: Colors.green),
         );
       } else if (item.type == 'instant_sunlight') {
         state.completeOutdoorQuest();
@@ -196,6 +197,7 @@ class ShopScreen extends StatelessWidget {
                                   spriteWidth: item.spriteWidth!,
                                   spriteHeight: item.spriteHeight!,
                                   isVertical: item.isVertical,
+                                  columns: item.columns,
                                 )
                               : Image.asset(item.imagePath!),
                         ),

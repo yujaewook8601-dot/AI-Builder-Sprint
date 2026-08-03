@@ -1,0 +1,21 @@
+{
+  "project_agents": [
+    {
+      "name": "Antigravity",
+      "model": "Gemini 2.0 Pro",
+      "roles": ["Frontend Developer", "UX Architect", "Game Balancer"],
+      "tools_used": [
+        "view_file",
+        "replace_file_content",
+        "write_to_file",
+        "grep_search",
+        "run_command (flutter analyze, build apk)"
+      ]
+    }
+  ],
+  "llm_backend": {
+    "provider": "Upstage",
+    "model": "solar-pro2",
+    "purpose": "NPC Dialogue Generation & Fitness Data Extraction"
+  }
+}

@@ -983,13 +983,23 @@ class GameState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void devCompleteAllQuests() {
-    if (dailyQuests.isNotEmpty) {
+    if (dailyQuests.isEmpty) {
+      dailyQuests.add(Quest(
+        id: "dummy_dev_quest",
+        title: "개발자 치트: 즉시 완료",
+        target: 1,
+        current: 1,
+        completed: true,
+        stat: 'str',
+        expReward: 10,
+      ));
+    } else {
       for (var q in dailyQuests) {
         q.completed = true;
         q.current = q.target; // Set progress to max
       }
-      _safeNotifyListeners();
     }
+    _safeNotifyListeners();
   }
 }
 

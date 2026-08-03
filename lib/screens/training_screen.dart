@@ -14,12 +14,15 @@ class TrainingScreen extends StatefulWidget {
 class _TrainingScreenState extends State<TrainingScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _showSpirit = true;
 
   @override
   void initState() {
     super.initState();
+    final state = context.read<GameState>();
+    _showSpirit = !state.isDailyConversationDone;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final state = context.read<GameState>();
       state.initSpiritGreeting();
     });
   }
@@ -83,7 +86,19 @@ class _TrainingScreenState extends State<TrainingScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Color(0xFFA8E6CF)),
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () {
+              if (state.isDailyQuestsCompleted) {
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("용사님 아직 퀘스트를 안깨셔서 몬스터와 싸울 수 없어요!"),
+                    backgroundColor: Colors.redAccent,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
           ),
           title: Text(
             "정령의 방 (${state.isAssessmentComplete ? 'Lv.${state.fitnessLevel} ${state.fitnessLevelName}' : '체력 진단 진행 중'})",
@@ -180,20 +195,21 @@ class _TrainingScreenState extends State<TrainingScreen> {
                     scale: 1.2,
                   ),
                 ),
-                Positioned(
-                  bottom: 15,
-                  right: MediaQuery.of(context).size.width * 0.2,
-                  child: SpriteWidget(
-                    imagePath: state.isDailyConversationDone 
-                        ? 'assets/images/Pink_Monster_Death_8.png'
-                        : 'assets/images/Pink_Monster_Idle_4.png',
-                    frameCount: state.isDailyConversationDone ? 8 : 4,
-                    loop: !state.isDailyConversationDone, // 대화 종료 시 1번만 재생 후 멈춤
-                    spriteWidth: 56,
-                    spriteHeight: 56,
-                    scale: 1.2,
+                if (_showSpirit)
+                  Positioned(
+                    bottom: 15,
+                    right: MediaQuery.of(context).size.width * 0.2,
+                    child: SpriteWidget(
+                      imagePath: state.isDailyConversationDone 
+                          ? 'assets/images/Pink_Monster_Death_8.png'
+                          : 'assets/images/Pink_Monster_Idle_4.png',
+                      frameCount: state.isDailyConversationDone ? 8 : 4,
+                      loop: !state.isDailyConversationDone, // 대화 종료 시 1번만 재생 후 멈춤
+                      spriteWidth: 56,
+                      spriteHeight: 56,
+                      scale: 1.2,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

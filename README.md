@@ -1,22 +1,3 @@
-<<<<<<< HEAD
-# pixel_hero
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
 # AI Builder Sprint 2026
 
 > 총 168시간, AI와 함께 만드는 도전
@@ -68,44 +49,34 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Git Fork 하는 방법
 
-참가팀은 이 저장소를 팀 대표의 GitHub 계정으로 **Fork**한 뒤, 해당 Fork 저장소에서 프로젝트를 개발하고 최종 결과물을 제출합니다.
-
-### 1. 저장소 Fork하기
-
-1. [AI-Builder-Sprint 저장소](https://github.com/ApptiveDev/AI-Builder-Sprint)에 접속합니다.
-2. 우측 상단의 **Fork** 버튼을 클릭합니다.
-  <img width="1888" height="1131" alt="스크린샷 2026-07-27 오전 12 31 16" src="https://github.com/user-attachments/assets/2f0f7f80-6c92-4ba5-87c5-89ed6107eeab" />
-
-3. 본인(또는 팀 대표) GitHub 계정으로 저장소가 복사됩니다. (`https://github.com/<내-계정>/AI-Builder-Sprint`)
-
-### 2. Fork한 저장소 로컬로 클론하기
-
-```bash
-git clone https://github.com/<내-계정>/AI-Builder-Sprint.git
-cd AI-Builder-Sprint
-```
-
-### 3. 개발 진행 및 커밋
-
-```bash
-git checkout -b develop
-# 코드 작성 및 수정
-git add .
-git commit -m "feat: 프로젝트 초기 구현"
-git push origin develop
-```
-
-포크된 저장소 내에서 개발을 진행해주시면 됩니다.
-
-### 4. 결과물 제출
-
-- **팀별로 Fork한 본인 저장소 URL을 제출 양식에 기재합니다.**
-- 제출 마감 전까지 코드, 데모 영상/배포 링크, 발표 자료를 함께 준비해 제출해주세요.
-- 코딩 에이전트를 활용한 경우 `.claude/`, `AGENTS.md` 등 설정 파일도 반드시 저장소에 포함해주세요.
-
+참가팀은 이 저장소를 팀 대표의 GitHub 계정으로 **Fork**한 뒤, 해당 Fork 저장소에서 프로젝트 전반을 개발하고 최종 결과물을 제출합니다.
 
 ## 문의
 
 - 대회 관련 문의: 해커톤 문의 오픈채팅방
 - 주최: 부산대학교 APPTIVE, 정보컴퓨터공학부 동아리연합회 / 후원: Upstage, 부산대 Anchor 사업단, 부산대 AI융합교육원
->>>>>>> ffb26d8d675f7168d83e356344d0b212907dd3d5
+
+---
+
+## AI 활용
+
+본 프로젝트는 여러 AI 코딩 에이전트를 협업 도구로 활용하여 개발되었습니다.
+
+### 사용한 AI
+
+- Claude
+- ChatGPT
+- Google Antigravity
+- Gemini
+
+### 활용 내용
+
+- Flutter 코드 생성 및 리팩터링
+- Provider 기반 아키텍처 설계
+- Upstage Solar 프롬프트 엔지니어링
+- 버그 분석 및 디버깅
+- UI/UX 개선
+- 게임 로직 설계
+- 코드 리뷰 및 최적화
+
+AI는 개발 보조 도구로 활용되었으며, 최종 구조 설계와 기능 검증 및 통합은 개발자가 직접 수행했습니다.
