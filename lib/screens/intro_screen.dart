@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_state.dart';
 import '../widgets/sprite_widget.dart';
+import '../dialogues/dialogues.dart';
+import 'onboarding_screen.dart';
+import 'home_screen.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -11,38 +14,8 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
-  final List<String> introDialogues = [
-    "그날도\n평소와 다르지 않은 하루였습니다.",
-    "늦은 밤,\n당신은 깊은 잠에 빠져들었습니다.",
-    "...",
-    "정체를 알 수 없는 존재가 나타나\n당신에게서\n무언가를 빼앗아 갔습니다.",
-    "그리고…\n보이지 않던 것들이 보이기 시작했습니다."
-  ];
-  
-  final List<String> tutorialDialogues = [
-    "정령: 드디어\n깨어났네.",
-    "주인공: ...?",
-    "주인공: 너는...\n누구야?",
-    "정령: 나는\n건강의 정령.",
-    "정령: 먼저\n미안하다는 말부터 할게.",
-    "정령: 네 건강을\n지키지 못했어.",
-    "주인공: 내 건강...?",
-    "정령: 꿈속에서\n무언가를 빼앗겼던 거\n기억나?",
-    "정령: 그게\n바로 너의 건강이야.",
-    "정령: 건강을 잃은 순간부터\n현실에는 보이지 않던 존재들이\n모습을 드러내기 시작했어.",
-    "주인공: 그럼...\n저 몬스터들은?",
-    "정령: 게으름.\n미루는 습관.\n운동하지 않는 하루.",
-    "정령: 그런 것들이\n몬스터가 된 모습이야.",
-    "정령: 하지만\n걱정하지 마.",
-    "정령: 건강은\n되찾을 수 있어.",
-    "정령: 다만...\n이 세계에는 한 가지 규칙이 있어.",
-    "정령: 이곳에서는\n싸우는 것만으로는 강해질 수 없어.",
-    "정령: 네가 현실에서 움직여야만\n이곳의 너도 함께 강해질 수 있어.",
-    "정령: 앞으로\n내가 퀘스트를 줄게.",
-    "정령: 현실에서 퀘스트를 완료하면\n스탯이 오르고\n몬스터를 이길 힘도 얻게 될 거야.",
-    "정령: 그리고 조금씩...\n잃어버린 건강도 되찾을 수 있어.",
-    "정령: 준비됐어?"
-  ];
+  final List<String> introDialogues = Dialogues.introDialogues;
+  final List<String> tutorialDialogues = Dialogues.tutorialDialogues;
 
   int currentIdx = 0;
 
@@ -61,6 +34,17 @@ class _IntroScreenState extends State<IntroScreen> {
           currentIdx++;
         } else {
           state.completeTutorial();
+          if (!state.isOnboardingDone) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          }
         }
       }
     });
@@ -71,7 +55,20 @@ class _IntroScreenState extends State<IntroScreen> {
     final state = context.watch<GameState>();
     final bool isIntro = !state.isIntroDone;
 
-    String currentText = isIntro ? introDialogues[currentIdx] : tutorialDialogues[currentIdx];
+    String fullLine = isIntro ? introDialogues[currentIdx] : tutorialDialogues[currentIdx];
+    String speaker = "";
+    String displayText = fullLine;
+
+    if (fullLine.startsWith("정령: ")) {
+      speaker = "정령";
+      displayText = fullLine.substring(4);
+    } else if (fullLine.startsWith("주인공: ")) {
+      speaker = "주인공";
+      displayText = fullLine.substring(5);
+    } else if (fullLine.startsWith("몬스터: ")) {
+      speaker = "몬스터";
+      displayText = fullLine.substring(5);
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -79,54 +76,146 @@ class _IntroScreenState extends State<IntroScreen> {
         behavior: HitTestBehavior.opaque,
         onTap: nextDialogue,
         child: Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.85,
-            constraints: const BoxConstraints(minHeight: 160),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A3622),
-              border: Border.all(color: const Color(0xFF2D6A38), width: 4),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(4, 4))],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Characters Layout (Slime, Hero, Spirit)
+              SizedBox(
+                height: 250,
+                width: MediaQuery.of(context).size.width * 0.9,
+                child: Stack(
                   children: [
-                    if (!isIntro)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 15),
-                        child: SpriteWidget(
-                          imagePath: 'assets/images/Pink_Monster_Idle_4.png',
+                    // Slime / Monster (Top Center)
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: _buildCutsceneCharacter(
+                        imagePath: 'assets/images/Walk3.png',
+                        frameCount: 8,
+                        spriteWidth: 50,
+                        spriteHeight: 50,
+                        opacity: speaker == "몬스터" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
+                        scale: speaker == "몬스터" ? 1.05 : 1.0,
+                        baseScale: 3.0,
+                        loop: true,
+                      ),
+                    ),
+                    // Hero (Bottom Left)
+                    Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20),
+                        child: _buildCutsceneCharacter(
+                          imagePath: 'assets/images/Dude_Monster_Idle_4.png',
                           frameCount: 4,
-                          spriteWidth: 56,
-                          spriteHeight: 56,
-                          scale: 1.5,
+                          spriteWidth: 32,
+                          spriteHeight: 32,
+                          opacity: speaker == "주인공" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
+                          scale: speaker == "주인공" ? 1.05 : 1.0,
+                          baseScale: 5.5,
+                          loop: true,
                         ),
                       ),
-                    Text(
-                      currentText,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.6,
+                    ),
+                    // Spirit (Bottom Right)
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 20),
+                        child: _buildCutsceneCharacter(
+                          imagePath: 'assets/images/Pink_Monster_Idle_4.png',
+                          frameCount: 4,
+                          spriteWidth: 32,
+                          spriteHeight: 32,
+                          opacity: speaker == "정령" ? 1.0 : (speaker.isEmpty ? 1.0 : 0.4),
+                          scale: speaker == "정령" ? 1.05 : 1.0,
+                          baseScale: 5.5,
+                          loop: true,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Icon(Icons.arrow_drop_down, color: Color(0xFFA8E6CF), size: 30),
-                )
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              // Dialogue Box
+              Container(
+                width: MediaQuery.of(context).size.width * 0.85,
+                constraints: const BoxConstraints(minHeight: 160),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A3622),
+                  border: Border.all(color: const Color(0xFF2D6A38), width: 4),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(4, 4))],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (speaker.isNotEmpty) ...[
+                          Text(
+                            speaker,
+                            style: const TextStyle(
+                              color: Color(0xFFFBC531),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        Text(
+                          displayText,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Icon(Icons.arrow_drop_down, color: Color(0xFFA8E6CF), size: 30),
+                    )
+                  ],
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCutsceneCharacter({
+    required String imagePath,
+    required int frameCount,
+    required int spriteWidth,
+    required int spriteHeight,
+    required double opacity,
+    required double scale,
+    required double baseScale,
+    required bool loop,
+  }) {
+    return AnimatedScale(
+      scale: scale,
+      duration: const Duration(milliseconds: 300),
+      child: AnimatedOpacity(
+        opacity: opacity,
+        duration: const Duration(milliseconds: 300),
+        child: SpriteWidget(
+          imagePath: imagePath,
+          frameCount: frameCount,
+          spriteWidth: spriteWidth,
+          spriteHeight: spriteHeight,
+          scale: baseScale,
+          loop: loop,
         ),
       ),
     );

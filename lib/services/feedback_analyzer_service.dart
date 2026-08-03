@@ -85,9 +85,14 @@ class FeedbackAnalyzerService {
   }
 
   /// [신규 추가] 딴소리 차단: 사용자의 입력이 운동/퀘스트와 관련이 있는지 확인
-  static bool isFitnessRelated(String text) {
+  static bool isFitnessRelated(String text, {bool isAssessment = false}) {
     // 띄어쓰기 제거 및 소문자 변환으로 검색 정확도 향상
     String normalizedText = text.replaceAll(' ', '').toLowerCase();
+
+    // 체력 측정 단계일 때만 숫자가 포함된 입력을 유효한 답변으로 처리
+    if (isAssessment && RegExp(r'\d+').hasMatch(normalizedText)) {
+      return true;
+    }
 
     // 허용 키워드 리스트
     final List<String> keywords = [
@@ -97,10 +102,9 @@ class FeedbackAnalyzerService {
       '어깨', '무릎', '코어', '팔', '다리', '허리', '가슴', '등', '근육', '몸',
       // 상태/컨디션
       '아파', '힘들어', '피곤', '좋아', '거뜬', '괜찮', '아프', '힘듦', '쉬웠', '어려',
+      '별로', '이상해', '이상하', '못잤', '잠을', '기분', '뻐근', '쑤셔', '결려', '컨디션', '상태',
       // 단위
-      '개', '번', '세트', '분', 'km', '킬로미터',
-      // 기본 인사
-      '안녕', '반가워', '헬로', '하이'
+      '개', '번', '회', '세트', '분', 'km', '킬로미터'
     ];
 
     // 키워드가 하나라도 포함되어 있으면 true 반환

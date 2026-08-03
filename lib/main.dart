@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/game_state.dart';
+import 'controllers/focus_workout_controller.dart';
 import 'screens/intro_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
@@ -13,11 +14,14 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => GameState()),
+        ChangeNotifierProvider(create: (_) => FocusWorkoutController()),
       ],
       child: const PixelHeroApp(),
     ),
   );
 }
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class PixelHeroApp extends StatelessWidget {
   const PixelHeroApp({super.key});
@@ -27,6 +31,7 @@ class PixelHeroApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pixel Hero',
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [routeObserver],
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0A0A0A),
@@ -51,6 +56,12 @@ class AppRouter extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<GameState>();
     
+    if (!state.isLoaded) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+      );
+    }
+
     if (!state.isIntroDone || !state.isTutorialDone) {
       return const IntroScreen();
     } else if (!state.isOnboardingDone) {

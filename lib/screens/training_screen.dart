@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_state.dart';
 import '../widgets/sprite_widget.dart';
+import 'quests_screen.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -65,20 +66,103 @@ class _TrainingScreenState extends State<TrainingScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<GameState>();
 
-    return Scaffold(
+    return PopScope(
+      canPop: state.isDailyQuestsCompleted,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("용사님 아직 퀘스트를 안깨셔서 몬스터와 싸울 수 없어요!"),
+              backgroundColor: Colors.redAccent,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(
           "정령의 방 (${state.isAssessmentComplete ? 'Lv.${state.fitnessLevel} ${state.fitnessLevelName}' : '체력 진단 진행 중'})",
-          style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 15, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 14, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF1A3622),
+        actions: [
+          TextButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: const Color(0xFF162521),
+                builder: (BuildContext context) {
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text("🛠️ 개발자 메뉴 (Cheat)", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<GameState>().devCompleteAllQuests();
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF44BD32)),
+                            child: const Text("✅ 퀘스트 즉시 완료", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              double newDist = state.distance <= 200 ? 100 : 200;
+                              context.read<GameState>().devSetDistance(newDist);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                            child: const Text("⏭️ 다음 스테이지 강제 이동 (홈에서 반영됨)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<GameState>().devAddGold(1000);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent),
+                            child: const Text("💰 +1000 G 획득", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<GameState>().devLevelUpStat('str');
+                              context.read<GameState>().devLevelUpStat('agi');
+                              context.read<GameState>().devLevelUpStat('end');
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                            child: const Text("💪 모든 스탯 +1 레벨업", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+            child: const Text("🛠️ Dev", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ),
+        ],
       ),
       body: Column(
         children: [
           // Animation Window
           Container(
             height: 140,
-            color: const Color(0xFF1A3622),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A3622),
+              image: DecorationImage(
+                image: AssetImage('assets/images/spirit_room2.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
             child: Stack(
               children: [
                 Positioned(
@@ -110,6 +194,27 @@ class _TrainingScreenState extends State<TrainingScreen> {
             ),
           ),
           
+          // Quests Button (Appears above chat when quests exist)
+          if (state.dailyQuests.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+              color: const Color(0xFF111111),
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const QuestsScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D6A38),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: Colors.black, width: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.assignment, color: Colors.amber),
+                label: const Text("오늘의 퀘스트 확인하기", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+
           // Chat History
           Expanded(
             child: Container(
@@ -120,11 +225,31 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 itemCount: state.chatHistory.length + (state.isChatLoading ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == state.chatHistory.length && state.isChatLoading) {
-                    return const Align(
+                    return Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text("정령이 생각하는 중...", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SpriteWidget(
+                              imagePath: 'assets/images/Pink_jump.png',
+                              frameCount: 8,
+                              spriteWidth: 32,
+                              spriteHeight: 32,
+                              scale: 0.8,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "정령이 생각하는 중...",
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
@@ -185,7 +310,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
             ),
           )
         ],
-      ),
-    );
+      ), // Closes Column
+      ), // Closes Scaffold
+    ); // Closes return PopScope
   }
 }

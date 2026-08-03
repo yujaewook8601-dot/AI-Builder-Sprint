@@ -5,6 +5,29 @@ import '../providers/game_state.dart';
 class StatsDialog extends StatelessWidget {
   const StatsDialog({super.key});
 
+  Widget _build100SegmentBar(int exp, Color activeColor) {
+    return Container(
+      height: 18,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border.all(color: const Color(0xFF2D6A38), width: 1.5),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: List.generate(100, (index) {
+          final isFilled = index < exp;
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 0.15),
+              color: isFilled ? activeColor : const Color(0xFF1E1E1E),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<GameState>();
@@ -16,7 +39,7 @@ class StatsDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       title: Text(
-        "${state.userName}의 능력",
+        "💪 ${state.userName}의 능력치 (100분할)",
         textAlign: TextAlign.center,
         style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 18, fontWeight: FontWeight.bold),
       ),
@@ -44,8 +67,6 @@ class StatsDialog extends StatelessWidget {
               final stat = entry.value;
               final effLv = state.getEffectiveStatLevel(statKey);
               final buffAmount = state.getStatBuffAmount(statKey);
-              double percent = (stat.exp / GameState.reqExpPerLevel).clamp(0.0, 1.0);
-
               return Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Column(
@@ -60,10 +81,10 @@ class StatsDialog extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Text("Lv. $effLv (${stat.exp}/${GameState.reqExpPerLevel})", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            Text("Lv. $effLv (${stat.exp}/100 칸)", style: const TextStyle(color: Color(0xFFA8E6CF), fontSize: 12, fontWeight: FontWeight.bold)),
                             const SizedBox(width: 5),
                             InkWell(
-                              onTap: () => context.read<GameState>().devLevelUpStat(statKey),
+                              onTap: () => context.read<GameState>().gainStatExp(statKey, 1),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
@@ -77,13 +98,8 @@ class StatsDialog extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
-                    LinearProgressIndicator(
-                      value: percent,
-                      backgroundColor: Colors.black,
-                      color: const Color(0xFF9B59B6),
-                      minHeight: 10,
-                    ),
+                    const SizedBox(height: 6),
+                    _build100SegmentBar(stat.exp, const Color(0xFF9B59B6)),
                   ],
                 ),
               );

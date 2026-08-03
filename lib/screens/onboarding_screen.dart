@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_state.dart';
+import 'home_screen.dart';
+import 'training_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -113,6 +115,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   double height = double.tryParse(heightController.text) ?? 175.0;
                   double weight = double.tryParse(weightController.text) ?? 70.0;
                   context.read<GameState>().completeOnboarding(name, age, height, weight, selectedLevel, selectedGoal);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TrainingScreen()),
+                  );
                 },
                 child: const Text("건강을 되찾으러 출발!", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               )

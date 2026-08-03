@@ -39,6 +39,7 @@ dependencies:
   pedometer: ^4.2.0
   light: ^5.0.0
   shared_preferences: ^2.5.5
+  home_widget: ^0.7.0
   flutter_dotenv: ^5.1.0
 
 dev_dependencies:
@@ -66,6 +67,7 @@ flutter:
   assets:
     - assets/images/
     - .env
+    - assets/images/spirit_room2.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

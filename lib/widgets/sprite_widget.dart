@@ -10,6 +10,7 @@ class SpriteWidget extends StatefulWidget {
   final Duration animationDuration;
   final double scale;
   final bool loop;
+  final bool isVertical;
 
   const SpriteWidget({
     super.key,
@@ -20,6 +21,7 @@ class SpriteWidget extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 600),
     this.scale = 1.0,
     this.loop = true,
+    this.isVertical = false,
   });
 
   @override
@@ -104,6 +106,7 @@ class _SpriteWidgetState extends State<SpriteWidget> {
         image: _image!,
         currentFrame: currentFrame,
         frameCount: widget.frameCount,
+        isVertical: widget.isVertical,
       ),
     );
   }
@@ -113,24 +116,42 @@ class _SpritePainter extends CustomPainter {
   final ui.Image image;
   final int currentFrame;
   final int frameCount;
+  final bool isVertical;
 
   _SpritePainter({
     required this.image,
     required this.currentFrame,
     required this.frameCount,
+    this.isVertical = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    double srcFrameWidth = image.width / frameCount;
-    double srcFrameHeight = image.height.toDouble();
+    bool vertical = isVertical || (image.height > image.width && frameCount > 1);
 
-    Rect srcRect = Rect.fromLTWH(
-      currentFrame * srcFrameWidth,
-      0,
-      srcFrameWidth,
-      srcFrameHeight,
-    );
+    double srcFrameWidth;
+    double srcFrameHeight;
+    Rect srcRect;
+
+    if (vertical) {
+      srcFrameWidth = image.width.toDouble();
+      srcFrameHeight = image.height / frameCount;
+      srcRect = Rect.fromLTWH(
+        0,
+        currentFrame * srcFrameHeight,
+        srcFrameWidth,
+        srcFrameHeight,
+      );
+    } else {
+      srcFrameWidth = image.width / frameCount;
+      srcFrameHeight = image.height.toDouble();
+      srcRect = Rect.fromLTWH(
+        currentFrame * srcFrameWidth,
+        0,
+        srcFrameWidth,
+        srcFrameHeight,
+      );
+    }
 
     Rect dstRect = Rect.fromLTWH(0, 0, size.width, size.height);
 
@@ -141,6 +162,8 @@ class _SpritePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SpritePainter oldDelegate) {
-    return oldDelegate.currentFrame != currentFrame || oldDelegate.image != image;
+    return oldDelegate.currentFrame != currentFrame ||
+        oldDelegate.image != image ||
+        oldDelegate.isVertical != isVertical;
   }
 }

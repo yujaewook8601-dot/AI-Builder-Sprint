@@ -17,6 +17,7 @@ class ShopItem {
   final int? frameCount;
   final int? spriteWidth;
   final int? spriteHeight;
+  final bool isVertical;
 
   ShopItem({
     required this.id,
@@ -31,6 +32,7 @@ class ShopItem {
     this.frameCount,
     this.spriteWidth,
     this.spriteHeight,
+    this.isVertical = false,
   });
 }
 
@@ -41,7 +43,7 @@ class ShopScreen extends StatelessWidget {
     ShopItem(
       id: 'str_buff_potion',
       name: '랜덤 근력 강화 포션',
-      desc: '근력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Lv)',
+      desc: '근력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
       price: 50,
       type: 'buff_potion',
       stat: 'str',
@@ -50,12 +52,13 @@ class ShopScreen extends StatelessWidget {
       imagePath: 'assets/images/strength potion.png',
       frameCount: 3,
       spriteWidth: 16,
-      spriteHeight: 48,
+      spriteHeight: 16,
+      isVertical: true,
     ),
     ShopItem(
       id: 'agi_buff_potion',
       name: '랜덤 민첩 강화 포션',
-      desc: '민첩 능력치 버프를 랜덤하게 부여합니다. (+2~10 Lv)',
+      desc: '민첩 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
       price: 50,
       type: 'buff_potion',
       stat: 'agi',
@@ -64,12 +67,13 @@ class ShopScreen extends StatelessWidget {
       imagePath: 'assets/images/dex potion.png',
       frameCount: 3,
       spriteWidth: 16,
-      spriteHeight: 48,
+      spriteHeight: 16,
+      isVertical: true,
     ),
     ShopItem(
       id: 'end_buff_potion',
       name: '랜덤 지구력 강화 포션',
-      desc: '지구력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Lv)',
+      desc: '지구력 능력치 버프를 랜덤하게 부여합니다. (+2~10 Exp)',
       price: 50,
       type: 'buff_potion',
       stat: 'end',
@@ -78,7 +82,8 @@ class ShopScreen extends StatelessWidget {
       imagePath: 'assets/images/endurance_potion.png',
       frameCount: 3,
       spriteWidth: 16,
-      spriteHeight: 48,
+      spriteHeight: 16,
+      isVertical: true,
     ),
     ShopItem(
       id: 'portable_sunlight',
@@ -124,9 +129,16 @@ class ShopScreen extends StatelessWidget {
     state.buyItem(item.price, () {
       if (item.type == 'buff_potion') {
         int buffVal = Random().nextInt((item.maxBuff! - item.minBuff!) + 1) + item.minBuff!;
-        state.applyBuff(item.id, item.stat!, buffVal, 180);
+        
+        final now = DateTime.now();
+        final midnight = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        final secondsUntilMidnight = midnight.difference(now).inSeconds;
+        
+        state.gainStatExp(item.stat!, buffVal);
+        state.applyBuff(item.id, item.stat!, buffVal, secondsUntilMidnight);
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${item.name} 사용! ${item.stat!.toUpperCase()} +$buffVal 버프 부여 (3분)"), backgroundColor: Colors.green),
+          SnackBar(content: Text("${item.name} 사용! ${item.stat!.toUpperCase()} +$buffVal Exp 및 당일 자정까지 버프 유지"), backgroundColor: Colors.green),
         );
       } else if (item.type == 'instant_sunlight') {
         state.completeOutdoorQuest();
@@ -183,6 +195,7 @@ class ShopScreen extends StatelessWidget {
                                   frameCount: item.frameCount!,
                                   spriteWidth: item.spriteWidth!,
                                   spriteHeight: item.spriteHeight!,
+                                  isVertical: item.isVertical,
                                 )
                               : Image.asset(item.imagePath!),
                         ),
